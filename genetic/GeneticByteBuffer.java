@@ -7,7 +7,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 public class GeneticByteBuffer {
@@ -23,7 +22,8 @@ public class GeneticByteBuffer {
     private static int[] buildNormal(int[] gray2Normal) {
         int[] result = new int[gray2Normal.length];
         for (int i = 0; i < gray2Normal.length; i++) {
-            result[gray2Normal[i]] = i;
+//            result[gray2Normal[i]] = i;
+            result[i] = i;
         }
         return result;
     }
@@ -34,18 +34,21 @@ public class GeneticByteBuffer {
      */
     private static int[] buildGray(int total) {
         int[] list = new int[total];
-        list[0] = 0;
-
-        int cur = 0;
-        int i = 0;
-        while (cur < total - 1) {
-            int val = (1 << i);
-            int size = cur + 1;
-            for (int j = size - 1; j >= 0 && cur < total - 1; j--) {
-                cur++;
-                list[cur] = val + list[j];
-            }
-            i++;
+//        list[0] = 0;
+//
+//        int cur = 0;
+//        int i = 0;
+//        while (cur < total - 1) {
+//            int val = (1 << i);
+//            int size = cur + 1;
+//            for (int j = size - 1; j >= 0 && cur < total - 1; j--) {
+//                cur++;
+//                list[cur] = val + list[j];
+//            }
+//            i++;
+//        }
+        for (int i = 0; i < total; i++) {
+            list[i] = i;
         }
         return list;
     }
@@ -56,7 +59,7 @@ public class GeneticByteBuffer {
         graphics.setColor(Color.BLACK);
         graphics.fillRect(0, 0, 256, 256);
         // g.fillRect(0, 0, 256, 256);
-        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.8f));
+        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.7f));
 
         int[] genes = chromosome.genes;
         for (int i = 0; i < genes.length; i += GENE_LENGTH / 8) {
@@ -95,7 +98,7 @@ public class GeneticByteBuffer {
                 for (int j = 0; j < image.getHeight(); j++) {
                     int origin = ORI_IMAGE.getRGB(i, j);
                     int newOne = image.getRGB(i, j);
-                    error += Math.abs(origin + newOne);
+                    error += Math.abs(origin - newOne);
                 }
             }
             // to make the error more readable
@@ -131,6 +134,8 @@ public class GeneticByteBuffer {
         Chromosome p1 = chromosomes[one];
         Chromosome p2 = chromosomes[two];
 
+//        System.out.println("p1:" + p1);
+//        System.out.println("p2:" + p2);
 
         // break the bit instead of int
         int breakingPoint = (int) (Math.random() * p1.genes.length * 8);
@@ -168,12 +173,12 @@ public class GeneticByteBuffer {
             System.arraycopy(p2.genes, firstInx + 1, son1, firstInx + 1, p2.genes.length - 1 - firstInx);
             System.arraycopy(p1.genes, firstInx + 1, son2, firstInx + 1, p2.genes.length - 1 - firstInx);
         }
-//        System.out.println("---parents---");
-//        System.out.println(Arrays.stream(p1.genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
-//        System.out.println(Arrays.stream(p2.genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
-//        System.out.println("---sons---");
-//        System.out.println(Arrays.stream(son1).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
-//        System.out.println(Arrays.stream(son2).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
+        System.out.println("---parents---");
+        System.out.println(Arrays.stream(p1.genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
+        System.out.println(Arrays.stream(p2.genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
+        System.out.println("---sons---");
+        System.out.println(Arrays.stream(son1).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
+        System.out.println(Arrays.stream(son2).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
         return new Chromosome[]{new Chromosome(son1), new Chromosome(son2)};
     }
 
@@ -227,25 +232,19 @@ public class GeneticByteBuffer {
         return result;
     }
 
-    private static HashSet<String> set = new HashSet<>();
-
-
     public static void main(String[] args) throws Exception {
-        String path = ".test";
-        ImageIO.write(ORI_IMAGE, "png", new File(path + "/origin.png"));
+        String path = ".test/";
+        ImageIO.write(ORI_IMAGE, "png", new File(path + "origin.png"));
         int totalGenerations = 100001;
         int poolSize = 10;
-        int eliminate = 2;
         int geneSize = 30;
-        int left = poolSize - eliminate;
 
         Chromosome[] chromosomes = new Chromosome[poolSize];
         for (int i = 0; i < poolSize; i++) {
             chromosomes[i] = new Chromosome(generateRandomChromosomes(geneSize));
-            set.add(Arrays.stream(chromosomes[i].genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
         }
         while (totalGenerations-- != 0) {
-            if (totalGenerations % 1000 == 0) {
+            if (totalGenerations % 500 == 0) {
                 for (Chromosome chromosome : chromosomes) {
                     System.out.println(Arrays.stream(chromosome.genes).mapToObj(o -> String.valueOf(o)).collect(Collectors.joining(",")));
                 }
@@ -264,3 +263,4 @@ public class GeneticByteBuffer {
         }
     }
 }
+
