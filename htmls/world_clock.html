@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>World Clock</title>
+    <style>
+        .clock {
+            display: inline-block;
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+        .clock .digital {
+            font-family: monospace;
+        }
+        .clock .analog {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 10px auto;
+            border-radius: 50%;
+            border: 10px solid #ccc;
+            background-color: #f2f2f2;
+        }
+ /*.clock .analog .hour::before,*/
+.clock .analog .hour::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  background-color: black; /* 设置时针颜色 */
+  height: 30px;
+  width: 5px;
+  border-radius: 5px;
+}
+
+/*.clock .analog .hour::before {
+  transform: translate(-50%, -100%) rotate(30deg);
+}*/
+
+.clock .analog .hour::after {
+  transform: translate(-50%, -100%) rotate(0deg);
+}
+
+/*.clock .analog .minute::before,*/
+.clock .analog .minute::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  background-color: black; /* 设置分针颜色 */
+  height: 50px;
+  width: 5px;
+  border-radius: 5px;
+}
+
+/*.clock .analog .minute::before {
+  transform: translate(-50%, -100%) rotate(6deg);
+}*/
+
+.clock .analog .minute::after {
+  transform: translate(-50%, -100%) rotate(-0deg);
+}
+
+/*.clock .analog .second::before,*/
+.clock .analog .second::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  background-color: red; /* 设置秒针颜色 */
+  height: 60px;
+  width: 2px;
+  border-radius: 2px;
+}
+
+/*.clock .analog .second::before {
+  transform: translate(-50%, -100%) rotate(180deg);
+}
+*/
+.clock .analog .second::after {
+  transform: translate(-50%, -100%) rotate(0deg);
+}
+
+.clock .analog .hour,
+.clock .analog .minute,
+.clock .analog .second {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+      .clock .analog .mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center;
+            background-color: #000;
+            height: 3px;
+            width: 10px;
+        }
+        .clock .analog .mark.big {
+            height: 10px;
+            width: 30px;
+            border-radius: 5px;
+            color: #000;
+            font-size: 24px;
+            font-weight: bold;
+            transform: translate(-50%, -60%);
+        }
+        .clock .analog .mark.small {
+            transform: translate(-50%, -55%);
+        }
+
+       .timezone-container {
+            margin: 20px;
+        }
+        #timezone-select {
+            width: 300px;
+            padding: 5px;
+        }
+        .label-container {
+            margin-bottom: 10px; /* 增加 margin 来为 label 和下拉框之间增加间距 */
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="clocks-container"></div>
+    <div class="timezone-container">
+        <div class="label-container">
+            <label for="timezone-select">Select Time Zone:</label>
+            <input type="text" id="timezone-search" placeholder="Search for a time zone..." onkeyup="filterTimeZones()">
+        </div>
+        
+        <select id="timezone-select" size="10">
+            <!-- Time zones will be added here by JavaScript -->
+        </select>
+        <button onclick="copyToClipboard()">Copy Time Zone</button>
+    </div>
+<script>
+    const clockData = [
+        {label: 'Los Angeles', timeZone: 'America/Los_Angeles', locale: 'zh-CN'},
+        {label: 'New York', timeZone: 'America/New_York', locale: 'zh-CN'},
+        {label: 'London', timeZone: 'Europe/London', locale: 'zh-CN'},
+        {label: 'Beijing', timeZone: 'Asia/Chongqing', locale: 'zh-CN'},
+        {label: 'Tokyo', timeZone: 'Asia/Tokyo', locale: 'zh-CN'},
+        {label: 'Sydney', timeZone: 'Australia/Sydney', locale: 'zh-CN'},
+        {label: 'Mexico', timeZone: 'America/Mexico_City', locale: 'zh-CN'},
+        {label: 'France', timeZone: 'Europe/Paris', locale: 'zh-CN'},
+        {label: 'Germany', timeZone: 'Europe/Berlin', locale: 'zh-CN'},
+    ];
+
+    function createClockElement(clock, index) {
+        const clockDiv = document.createElement('div');
+        clockDiv.className = 'clock';
+
+        const digitalDiv = document.createElement('div');
+        digitalDiv.className = 'digital';
+        digitalDiv.id = `digital-${index}`;
+        clockDiv.appendChild(digitalDiv);
+
+        const analogDiv = document.createElement('div');
+        analogDiv.className = 'analog';
+        analogDiv.id = `analog-${index}`;
+
+        ['hour', 'minute', 'second'].forEach(hand => {
+            const handDiv = document.createElement('div');
+            handDiv.className = hand;
+            analogDiv.appendChild(handDiv);
+        });
+
+        clockDiv.appendChild(analogDiv);
+
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'label';
+        labelDiv.textContent = clock.label;
+        clockDiv.appendChild(labelDiv);
+
+        return clockDiv;
+    }
+
+    function updateDigitalClock(clockId, day, time) {
+        document.getElementById(clockId).innerHTML = "<p style='font-size:15px;margin-bottom:-10px'>" + day + "</p><br>" + time;
+    }
+
+    function updateAnalogClock(clockId, hours, minutes, seconds) {
+        const hourAngle = (hours % 12) * 30 + minutes / 2;
+        const minuteAngle = minutes * 6;
+        const secondAngle = seconds * 6;
+        document.getElementById(clockId).querySelector(".hour").style.transform = "rotate(" + hourAngle + "deg)";
+        document.getElementById(clockId).querySelector(".minute").style.transform = "rotate(" + minuteAngle + "deg)";
+        document.getElementById(clockId).querySelector(".second").style.transform = "rotate(" + secondAngle + "deg)";
+    }
+
+    function getTime(hour, minute, second) {
+        let hours = hour.toString().padStart(2, '0');
+        let minutes = minute.toString().padStart(2, '0');
+        let seconds = second.toString().padStart(2, '0');
+        if (hours < 0) {
+            hours = (24 + hours).toString().padStart(2, '0');
+        }
+        return hours + ":" + minutes + ":" + seconds;
+    }
+
+    function updateClocks() {
+        clockData.forEach((clock, index) => {
+            const date = new Date();
+            const localDate = new Date(date.toLocaleString(clock.locale, {timeZone: clock.timeZone}));
+            const year = localDate.getFullYear();
+            const month = localDate.getMonth() + 1;
+            const day = localDate.getDate();
+            const hour = localDate.getHours();
+            const minute = localDate.getMinutes();
+            const second = localDate.getSeconds();
+            updateDigitalClock(`digital-${index}`, `${year}-${month}-${day}`, getTime(hour, minute, second));
+            updateAnalogClock(`analog-${index}`, hour, minute, second);
+        });
+    }
+
+    function initializeClocks() {
+        const container = document.getElementById('clocks-container');
+        clockData.forEach((clock, index) => {
+            container.appendChild(createClockElement(clock, index));
+        });
+        updateClocks();
+        setInterval(updateClocks, 1000);
+    }
+
+        // 获取所有的时区并填充到下拉列表中
+        const timeZones = Intl.supportedValuesOf('timeZone');
+        const selectElement = document.getElementById('timezone-select');
+
+        timeZones.forEach(timeZone => {
+            const option = document.createElement('option');
+            option.value = timeZone;
+            option.textContent = timeZone;
+            selectElement.appendChild(option);
+        });
+
+        // 实现搜索功能
+        function filterTimeZones() {
+            const input = document.getElementById('timezone-search').value.toLowerCase();
+            const options = selectElement.getElementsByTagName('option');
+
+            for (let i = 0; i < options.length; i++) {
+                const option = options[i];
+                const text = option.textContent.toLowerCase();
+
+                if (text.includes(input)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            }
+        }
+
+        // 复制选中的时区到剪贴板
+        function copyToClipboard() {
+            const selectedTimeZone = selectElement.options[selectElement.selectedIndex].value;
+            navigator.clipboard.writeText(selectedTimeZone).then(() => {
+                alert("Copied: " + selectedTimeZone);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    initializeClocks();
+</script>
+
+</body>
+</html>
